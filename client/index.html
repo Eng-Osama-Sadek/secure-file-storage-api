@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure File Storage Service</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #0f172a; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1, h2 { color: #1e3a8a; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+    button { background-color: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #1d4ed8; }
+    .progress-bar-bg { width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 10px; display: none; }
+    .progress-bar-fill { width: 0%; height: 100%; background: #10b981; transition: width 0.2s; }
+    .file-item { border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .tag-public { background: #dcfce7; color: #166534; }
+    .tag-private { background: #fee2e2; color: #991b1b; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔒 Secure File Storage Service</h1>
+
+  <!-- Auth Section -->
+  <div id="authSection">
+    <h2 id="authTitle">Login / Register</h2>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password">
+    </div>
+    <button onclick="handleAuth('login')">Login</button>
+    <button onclick="handleAuth('register')" style="background:#64748b">Register</button>
+    <p id="authMsg" style="color:red;"></p>
+  </div>
+
+  <!-- Dashboard Section -->
+  <div id="dashboardSection" class="hidden">
+    <p>Logged in as: <strong id="userDisplay"></strong> | <a href="#" onclick="logout()">Logout</a></p>
+
+    <h2>Upload File (Up to 100MB)</h2>
+    <div class="form-group">
+      <input type="file" id="fileInput">
+    </div>
+    <div class="form-group">
+      <label><input type="checkbox" id="isPublic"> Make File Publicly Accessible</label>
+    </div>
+    <button onclick="uploadFile()">Upload File</button>
+
+    <div class="progress-bar-bg" id="progressBg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <h2>Your Dashboard Files</h2>
+    <div id="fileList"></div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'http://localhost:5000/api';
+  let token = localStorage.getItem('jwt_token');
+  let currentUser = localStorage.getItem('username');
+
+  if (token) showDashboard();
+
+  async function handleAuth(type) {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const res = await fetch(`${API_URL}/auth/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      if (type === 'login') {
+        token = data.token;
+        currentUser = data.username;
+        localStorage.setItem('jwt_token', token);
+        localStorage.setItem('username', currentUser);
+        showDashboard();
+      } else {
+        alert('Registration successful! Please login.');
+      }
+    } else {
+      document.getElementById('authMsg').innerText = data.error;
+    }
+  }
+
+  function showDashboard() {
+    document.getElementById('authSection').classList.add('hidden');
+    document.getElementById('dashboardSection').classList.remove('hidden');
+    document.getElementById('userDisplay').innerText = currentUser;
+    loadFiles();
+  }
+
+  function logout() {
+    localStorage.clear();
+    location.reload();
+  }
+
+  function uploadFile() {
+    const fileInput = document.getElementById('fileInput');
+    const isPublic = document.getElementById('isPublic').checked;
+    if (!fileInput.files[0]) return alert('Please select a file');
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('isPublic', isPublic);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/files/upload`, true);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    const progressBg = document.getElementById('progressBg');
+    const progressFill = document.getElementById('progressFill');
+    progressBg.style.display = 'block';
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = (e.loaded / e.total) * 100;
+        progressFill.style.width = percent + '%';
+      }
+    };
+
+    xhr.onload = () => {
+      progressBg.style.display = 'none';
+      progressFill.style.width = '0%';
+      if (xhr.status === 201) {
+        alert('File uploaded successfully!');
+        fileInput.value = '';
+        loadFiles();
+      } else {
+        alert('Upload failed: ' + JSON.parse(xhr.responseText).error);
+      }
+    };
+
+    xhr.send(formData);
+  }
+
+  async function loadFiles() {
+    const res = await fetch(`${API_URL}/files`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const files = await res.json();
+    const list = document.getElementById('fileList');
+    list.innerHTML = '';
+
+    files.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      const fileUrl = `${API_URL}/files/download/${f.id}`;
+      div.innerHTML = `
+        <div>
+          <strong>${f.originalName}</strong> (${(f.size / (1024*1024)).toFixed(2)} MB)
+          <br>
+          <span class="tag ${f.isPublic ? 'tag-public' : 'tag-private'}">${f.isPublic ? 'Public' : 'Private'}</span>
+        </div>
+        <div>
+          <button onclick="toggleVisibility('${f.id}', ${!f.isPublic})" style="background:#475569;">Make ${f.isPublic ? 'Private' : 'Public'}</button>
+          <a href="${fileUrl}" target="_blank" style="margin-left:8px;">Download Link</a>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  async function toggleVisibility(id, isPublic) {
+    await fetch(`${API_URL}/files/${id}/visibility`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ isPublic })
+    });
+    loadFiles();
+  }
+</script>
+</body>
+</html>
