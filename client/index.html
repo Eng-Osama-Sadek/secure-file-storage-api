@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure File Storage - Auth</title>
+    <title>Secure File Storage Service</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -14,9 +14,10 @@
                     colors: {
                         darkBg: '#0b0f19',
                         cardBg: '#131722',
+                        sidebarBg: '#11141f',
                         inputBg: '#1a1f2e',
-                        accentBlue: '#5865f2',
-                        accentHover: '#4752c4'
+                        accentPurp: '#6366f1',
+                        accentBlue: '#5865f2'
                     }
                 }
             }
@@ -26,81 +27,249 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #0b0f19; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden">
+<body class="min-h-screen relative overflow-x-hidden bg-darkBg">
 
-    <!-- Auth Card Floating Screen -->
-    <div id="authScreen" class="w-full max-w-md bg-cardBg border border-gray-800/80 rounded-2xl p-8 shadow-2xl relative z-10 my-8">
-        
-        <!-- Shield Icon Top -->
-        <div class="flex justify-center mb-5">
-            <div class="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-        </div>
-
-        <!-- Dynamic Header -->
-        <div class="text-center space-y-1 mb-6">
-            <h2 id="authTitle" class="text-2xl font-bold text-white tracking-tight">Welcome Back</h2>
-            <p id="authSubtitle" class="text-xs text-gray-400 font-medium">Access your secure storage vault</p>
-        </div>
-
-        <!-- Alert Notification (e.g. Registration Successful) -->
-        <div id="authAlert" class="hidden mb-5 p-3 rounded-xl text-xs font-medium border text-center"></div>
-
-        <!-- Auth Form -->
-        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-            <!-- Email Field -->
-            <div>
-                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                <div class="relative">
-                    <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
-                    <input type="email" id="authEmail" required placeholder="vikashkumar355555@gmail.com" 
-                           class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
+    <!-- ==================== AUTH SCREEN ==================== -->
+    <div id="authScreen" class="fixed inset-0 z-50 bg-darkBg flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-cardBg border border-gray-800/80 rounded-2xl p-8 shadow-2xl relative z-10">
+            
+            <!-- Shield Icon Top -->
+            <div class="flex justify-center mb-5">
+                <div class="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
             </div>
 
-            <!-- Password Field -->
+            <!-- Dynamic Header -->
+            <div class="text-center space-y-1 mb-6">
+                <h2 id="authTitle" class="text-2xl font-bold text-white tracking-tight">Welcome Back</h2>
+                <p id="authSubtitle" class="text-xs text-gray-400 font-medium">Access your secure storage vault</p>
+            </div>
+
+            <!-- Alert Notification -->
+            <div id="authAlert" class="hidden mb-5 p-3 rounded-xl text-xs font-medium border text-center"></div>
+
+            <!-- Auth Form -->
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <!-- Email Field -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input type="email" id="authEmail" required placeholder="user@example.com" 
+                               class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                        <input type="password" id="authPassword" required placeholder="••••••••" 
+                               class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                            <i id="eyeIcon" class="fa-regular fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="authSubmitBtn" 
+                        class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+                    <i id="btnIcon" class="fa-solid fa-right-to-bracket text-xs"></i>
+                    <span id="btnText">Sign In</span>
+                </button>
+            </form>
+
+            <!-- Toggle Switch Link -->
+            <div class="text-center mt-6 text-xs text-gray-400 font-medium">
+                <span id="toggleQuestion">Don't have an account?</span>
+                <button onclick="switchAuthMode()" id="toggleActionBtn" class="text-indigo-400 font-semibold hover:underline ml-1">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DASHBOARD SCREEN ==================== -->
+    <div id="mainDashboard" class="hidden flex h-screen overflow-hidden">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-sidebarBg border-r border-gray-800/60 flex flex-col justify-between p-4 flex-shrink-0">
             <div>
-                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
-                <div class="relative">
-                    <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
-                    <input type="password" id="authPassword" required placeholder="••••••••" 
-                           class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
-                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                        <i id="eyeIcon" class="fa-regular fa-eye text-xs"></i>
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 mb-8 px-2">
+                    <div class="w-9 h-9 bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 rounded-xl flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-box-archive"></i>
+                    </div>
+                    <span class="text-lg font-bold tracking-wide text-white">AROKHHO</span>
+                    <span class="text-[10px] bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 px-1.5 py-0.5 rounded font-semibold">PRO</span>
+                </div>
+
+                <!-- Main Nav -->
+                <nav class="space-y-1">
+                    <button onclick="filterByCategory('all')" class="w-full flex items-center space-x-3 text-sm px-3 py-2.5 rounded-xl bg-indigo-600/10 text-indigo-400 font-medium border border-indigo-500/20">
+                        <i class="fa-solid fa-folder-open text-base"></i>
+                        <span>All Files</span>
                     </button>
-                </div>
+                    <div class="pt-6 pb-2 px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        Folders
+                    </div>
+                    <div id="folderList" class="space-y-1">
+                        <!-- Dynamic Folders -->
+                    </div>
+                </nav>
             </div>
 
-            <!-- Submit Button -->
-            <button type="submit" id="authSubmitBtn" 
-                    class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
-                <i id="btnIcon" class="fa-solid fa-right-to-bracket text-xs"></i>
-                <span id="btnText">Sign In</span>
-            </button>
-        </form>
+            <!-- Storage & Logout -->
+            <div class="space-y-3">
+                <div class="bg-cardBg p-3.5 rounded-xl border border-gray-800/80">
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-gray-400 font-medium">STORAGE USED</span>
+                        <span class="text-gray-300 font-bold text-[11px]" id="storageUsageText">0 MB / 2 GB</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                        <div id="storageProgressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
 
-        <!-- Toggle Switch Link -->
-        <div class="text-center mt-6 text-xs text-gray-400 font-medium">
-            <span id="toggleQuestion">Don't have an account?</span>
-            <button onclick="switchAuthMode()" id="toggleActionBtn" class="text-indigo-400 font-semibold hover:underline ml-1">Sign Up</button>
+                <button onclick="logout()" class="w-full flex items-center justify-center space-x-2 py-2.5 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-medium transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-y-auto">
+
+            <!-- Header -->
+            <header class="h-20 border-b border-gray-800/60 px-8 flex items-center justify-between bg-sidebarBg/30 backdrop-blur sticky top-0 z-10">
+                <!-- Search Bar -->
+                <div class="relative w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Search files by name..." 
+                           class="w-full bg-cardBg border border-gray-800/80 rounded-xl pl-10 pr-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="document.getElementById('folderModal').classList.remove('hidden')" 
+                            class="px-4 py-2 border border-gray-700/80 hover:bg-gray-800 text-gray-300 rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-folder-plus text-gray-400"></i>
+                        <span>New Folder</span>
+                    </button>
+                    
+                    <label class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Upload File</span>
+                        <input type="file" id="fileUploadInput" class="hidden" onchange="uploadFile(this)">
+                    </label>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="p-8 space-y-6">
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-5">
+                    <div class="bg-cardBg border border-gray-800/80 rounded-2xl p-5 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-regular fa-file-lines"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-gray-400 tracking-wider">TOTAL FILES</p>
+                            <h3 class="text-2xl font-bold text-white mt-0.5" id="totalFilesCount">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-cardBg border border-gray-800/80 rounded-2xl p-5 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-gray-400 tracking-wider">PUBLIC FILES</p>
+                            <h3 class="text-2xl font-bold text-white mt-0.5" id="publicFilesCount">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-cardBg border border-gray-800/80 rounded-2xl p-5 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-regular fa-folder"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-gray-400 tracking-wider">TOTAL FOLDERS</p>
+                            <h3 class="text-2xl font-bold text-white mt-0.5" id="totalFoldersCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs & Sort -->
+                <div class="flex items-center justify-between border-b border-gray-800/60 pb-4">
+                    <div class="flex items-center space-x-2" id="filterTabButtons">
+                        <button onclick="filterByCategory('all', this)" class="filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white">All Files</button>
+                        <button onclick="filterByCategory('image', this)" class="filter-btn px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:bg-gray-800/60">Images</button>
+                        <button onclick="filterByCategory('document', this)" class="filter-btn px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:bg-gray-800/60">Documents</button>
+                        <button onclick="filterByCategory('media', this)" class="filter-btn px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:bg-gray-800/60">Media</button>
+                    </div>
+                    <div class="flex items-center space-x-2 text-xs text-gray-400">
+                        <span>Sort by:</span>
+                        <select id="sortSelect" onchange="sortFiles(this.value)" class="bg-cardBg border border-gray-800 text-gray-300 rounded-lg px-2.5 py-1 focus:outline-none">
+                            <option value="date">Date Added</option>
+                            <option value="size">File Size</option>
+                            <option value="name">Name</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Files Grid -->
+                <div id="filesGrid" class="grid grid-cols-3 gap-5">
+                    <!-- Dynamic Files -->
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div id="folderModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-cardBg border border-gray-800 p-6 rounded-2xl w-96 space-y-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-white">Create New Folder</h3>
+            <input type="text" id="newFolderName" placeholder="Folder Name" class="w-full bg-inputBg border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="document.getElementById('folderModal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+                <button onclick="createNewFolder()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl font-medium">Create</button>
+            </div>
         </div>
     </div>
 
-    <!-- Main Dashboard Container (Hidden until logged in) -->
-    <div id="dashboardScreen" class="hidden fixed inset-0 bg-darkBg z-50 flex items-center justify-center">
-        <div class="text-center space-y-4">
-            <h1 class="text-3xl font-bold text-white">Dashboard Access Granted</h1>
-            <p class="text-gray-400 text-sm">You are logged into your secure storage vault.</p>
-            <button onclick="logout()" class="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl">Logout</button>
-        </div>
-    </div>
-
+    <!-- ==================== SCRIPT ==================== -->
     <script>
         const API_URL = 'http://localhost:5000/api';
-        let currentMode = 'login'; // 'login' or 'register'
+        let currentMode = 'login';
+        let allFiles = [];
+        let filteredFiles = [];
+        let folders = [
+            { id: '1', name: 'New folder 1', fileCount: 0 },
+            { id: '2', name: 'testing', fileCount: 0 }
+        ];
+
+        // --- AUTH & VIEW TOGGLING ---
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+                fetchFiles();
+            } else {
+                document.getElementById('mainDashboard').classList.add('hidden');
+                document.getElementById('authScreen').classList.remove('hidden');
+                setAuthMode('login');
+            }
+        }
 
         function setAuthMode(mode, alertMessage = null) {
             currentMode = mode;
@@ -138,11 +307,7 @@
         }
 
         function switchAuthMode() {
-            if (currentMode === 'login') {
-                setAuthMode('register');
-            } else {
-                setAuthMode('login');
-            }
+            setAuthMode(currentMode === 'login' ? 'register' : 'login');
         }
 
         function togglePasswordVisibility() {
@@ -180,11 +345,10 @@
                     alertBox.classList.remove('hidden');
                 } else {
                     if (currentMode === 'register') {
-                        // Switch to login view and show green success message like in screenshot 2
                         setAuthMode('login', 'Registration successful! Please log in.');
                     } else {
                         localStorage.setItem('authToken', data.token);
-                        showDashboard();
+                        checkAuth();
                     }
                 }
             } catch (err) {
@@ -194,24 +358,192 @@
             }
         }
 
-        function showDashboard() {
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('dashboardScreen').classList.remove('hidden');
-        }
-
         function logout() {
             localStorage.removeItem('authToken');
-            document.getElementById('dashboardScreen').classList.add('hidden');
-            document.getElementById('authScreen').classList.remove('hidden');
-            setAuthMode('login');
+            checkAuth();
         }
 
-        // Initialize Screen Check
-        if (localStorage.getItem('authToken')) {
-            showDashboard();
-        } else {
-            setAuthMode('login');
+        // --- DASHBOARD LOGIC ---
+        async function fetchFiles() {
+            try {
+                const res = await fetch(`${API_URL}/files`);
+                allFiles = await res.json();
+                filteredFiles = [...allFiles];
+                updateStatsAndStorage();
+                renderFiles(filteredFiles);
+                renderFolders();
+            } catch (err) {
+                console.error("Error fetching files:", err);
+            }
         }
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+                return '<i class="fa-regular fa-file-image text-4xl text-emerald-400"></i>';
+            } else if (['mp4', 'mkv', 'mov', 'avi'].includes(ext)) {
+                return '<i class="fa-regular fa-file-video text-4xl text-indigo-400"></i>';
+            } else if (['pdf'].includes(ext)) {
+                return '<i class="fa-regular fa-file-pdf text-4xl text-red-400"></i>';
+            } else if (['docx', 'doc', 'txt'].includes(ext)) {
+                return '<i class="fa-regular fa-file-word text-4xl text-blue-400"></i>';
+            } else if (['zip', 'rar', '7z'].includes(ext)) {
+                return '<i class="fa-regular fa-file-zipper text-4xl text-amber-400"></i>';
+            }
+            return '<i class="fa-regular fa-file text-4xl text-gray-400"></i>';
+        }
+
+        function renderFiles(files) {
+            const grid = document.getElementById('filesGrid');
+            if(!files || files.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center text-gray-500 py-12 text-sm font-medium">No files uploaded yet.</div>`;
+                return;
+            }
+
+            grid.innerHTML = files.map(file => `
+                <div class="bg-cardBg border border-gray-800/80 rounded-2xl p-4 relative group hover:border-gray-700 transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[10px] font-bold px-2 py-0.5 ${file.isPublic ? 'bg-emerald-950 text-emerald-400 border-emerald-800/50' : 'bg-gray-800 text-gray-400 border-gray-700/50'} rounded-md border flex items-center gap-1">
+                            <i class="fa-solid ${file.isPublic ? 'fa-globe' : 'fa-lock'} text-[9px]"></i> ${file.isPublic ? 'Public' : 'Private'}
+                        </span>
+                        <button onclick="deleteFile('${file.id}')" title="Delete File" class="text-gray-500 hover:text-red-400 p-1 transition">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="h-28 bg-gray-900/60 rounded-xl flex items-center justify-center mb-3 border border-gray-800/60">
+                        ${getFileIcon(file.originalName)}
+                    </div>
+                    <h4 class="text-xs font-semibold text-gray-200 truncate" title="${file.originalName}">${file.originalName}</h4>
+                    <div class="flex justify-between items-center text-[11px] text-gray-500 mt-2">
+                        <span>${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span>${new Date(file.createdAt).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function uploadFile(input) {
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            try {
+                const res = await fetch(`${API_URL}/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!res.ok) {
+                    const errData = await res.json();
+                    alert(errData.error || 'Upload failed');
+                } else {
+                    fetchFiles();
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+            } finally {
+                input.value = '';
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if(!confirm("Are you sure you want to delete this file?")) return;
+            try {
+                const res = await fetch(`${API_URL}/files/${fileId}`, { method: 'DELETE' });
+                if(res.ok) {
+                    fetchFiles();
+                } else {
+                    alert("Failed to delete file.");
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+            }
+        }
+
+        function createNewFolder() {
+            const nameInput = document.getElementById('newFolderName');
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            folders.push({
+                id: Date.now().toString(),
+                name: name,
+                fileCount: 0
+            });
+
+            nameInput.value = '';
+            document.getElementById('folderModal').classList.add('hidden');
+            renderFolders();
+            updateStatsAndStorage();
+        }
+
+        function renderFolders() {
+            const folderList = document.getElementById('folderList');
+            folderList.innerHTML = folders.map(f => `
+                <button class="w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-800/50 hover:text-white transition">
+                    <span class="flex items-center space-x-2 truncate">
+                        <i class="fa-regular fa-folder text-amber-400"></i>
+                        <span>${f.name}</span>
+                    </span>
+                    <span class="text-[10px] text-gray-500 font-semibold">${f.fileCount}</span>
+                </button>
+            `).join('');
+        }
+
+        function updateStatsAndStorage() {
+            document.getElementById('totalFilesCount').innerText = allFiles.length;
+            document.getElementById('publicFilesCount').innerText = allFiles.filter(f => f.isPublic).length;
+            document.getElementById('totalFoldersCount').innerText = folders.length;
+
+            const totalSizeBytes = allFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+            const totalSizeMB = (totalSizeBytes / (1024 * 1024)).toFixed(2);
+            const maxStorageMB = 2048;
+            const usagePercent = Math.min((totalSizeMB / maxStorageMB) * 100, 100).toFixed(1);
+
+            document.getElementById('storageUsageText').innerText = `${totalSizeMB} MB / 2 GB`;
+            document.getElementById('storageProgressBar').style.width = `${usagePercent}%`;
+        }
+
+        function handleSearch(query) {
+            const q = query.toLowerCase().trim();
+            filteredFiles = allFiles.filter(f => f.originalName.toLowerCase().includes(q));
+            renderFiles(filteredFiles);
+        }
+
+        function filterByCategory(category, btnEl) {
+            if(btnEl) {
+                const buttons = document.querySelectorAll('#filterTabButtons button');
+                buttons.forEach(btn => {
+                    btn.className = "filter-btn px-4 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:bg-gray-800/60";
+                });
+                btnEl.className = "filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white";
+            }
+
+            if (category === 'all') {
+                filteredFiles = [...allFiles];
+            } else if (category === 'image') {
+                filteredFiles = allFiles.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f.originalName));
+            } else if (category === 'document') {
+                filteredFiles = allFiles.filter(f => /\.(pdf|docx|doc|txt)$/i.test(f.originalName));
+            } else if (category === 'media') {
+                filteredFiles = allFiles.filter(f => /\.(mp4|mkv|mov|mp3)$/i.test(f.originalName));
+            }
+            renderFiles(filteredFiles);
+        }
+
+        function sortFiles(criteria) {
+            if (criteria === 'name') {
+                filteredFiles.sort((a, b) => a.originalName.localeCompare(b.originalName));
+            } else if (criteria === 'size') {
+                filteredFiles.sort((a, b) => b.size - a.size);
+            } else if (criteria === 'date') {
+                filteredFiles.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+            renderFiles(filteredFiles);
+        }
+
+        // Initialize Check
+        checkAuth();
     </script>
 </body>
 </html>
