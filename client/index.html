@@ -1,190 +1,217 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure File Storage Service</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #0f172a; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    h1, h2 { color: #1e3a8a; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-    button { background-color: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    button:hover { background-color: #1d4ed8; }
-    .progress-bar-bg { width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 10px; display: none; }
-    .progress-bar-fill { width: 0%; height: 100%; background: #10b981; transition: width 0.2s; }
-    .file-item { border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .tag-public { background: #dcfce7; color: #166534; }
-    .tag-private { background: #fee2e2; color: #991b1b; }
-    .hidden { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure File Storage - Auth</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        cardBg: '#131722',
+                        inputBg: '#1a1f2e',
+                        accentBlue: '#5865f2',
+                        accentHover: '#4752c4'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0b0f19; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden">
 
-<div class="container">
-  <h1>🔒 Secure File Storage Service</h1>
-
-  <!-- Auth Section -->
-  <div id="authSection">
-    <h2 id="authTitle">Login / Register</h2>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="username" placeholder="Enter username">
-    </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="password" placeholder="Enter password">
-    </div>
-    <button onclick="handleAuth('login')">Login</button>
-    <button onclick="handleAuth('register')" style="background:#64748b">Register</button>
-    <p id="authMsg" style="color:red;"></p>
-  </div>
-
-  <!-- Dashboard Section -->
-  <div id="dashboardSection" class="hidden">
-    <p>Logged in as: <strong id="userDisplay"></strong> | <a href="#" onclick="logout()">Logout</a></p>
-
-    <h2>Upload File (Up to 100MB)</h2>
-    <div class="form-group">
-      <input type="file" id="fileInput">
-    </div>
-    <div class="form-group">
-      <label><input type="checkbox" id="isPublic"> Make File Publicly Accessible</label>
-    </div>
-    <button onclick="uploadFile()">Upload File</button>
-
-    <div class="progress-bar-bg" id="progressBg">
-      <div class="progress-bar-fill" id="progressFill"></div>
-    </div>
-
-    <h2>Your Dashboard Files</h2>
-    <div id="fileList"></div>
-  </div>
-</div>
-
-<script>
-  const API_URL = 'http://localhost:5000/api';
-  let token = localStorage.getItem('jwt_token');
-  let currentUser = localStorage.getItem('username');
-
-  if (token) showDashboard();
-
-  async function handleAuth(type) {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const res = await fetch(`${API_URL}/auth/${type}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      if (type === 'login') {
-        token = data.token;
-        currentUser = data.username;
-        localStorage.setItem('jwt_token', token);
-        localStorage.setItem('username', currentUser);
-        showDashboard();
-      } else {
-        alert('Registration successful! Please login.');
-      }
-    } else {
-      document.getElementById('authMsg').innerText = data.error;
-    }
-  }
-
-  function showDashboard() {
-    document.getElementById('authSection').classList.add('hidden');
-    document.getElementById('dashboardSection').classList.remove('hidden');
-    document.getElementById('userDisplay').innerText = currentUser;
-    loadFiles();
-  }
-
-  function logout() {
-    localStorage.clear();
-    location.reload();
-  }
-
-  function uploadFile() {
-    const fileInput = document.getElementById('fileInput');
-    const isPublic = document.getElementById('isPublic').checked;
-    if (!fileInput.files[0]) return alert('Please select a file');
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('isPublic', isPublic);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${API_URL}/files/upload`, true);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-
-    const progressBg = document.getElementById('progressBg');
-    const progressFill = document.getElementById('progressFill');
-    progressBg.style.display = 'block';
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percent = (e.loaded / e.total) * 100;
-        progressFill.style.width = percent + '%';
-      }
-    };
-
-    xhr.onload = () => {
-      progressBg.style.display = 'none';
-      progressFill.style.width = '0%';
-      if (xhr.status === 201) {
-        alert('File uploaded successfully!');
-        fileInput.value = '';
-        loadFiles();
-      } else {
-        alert('Upload failed: ' + JSON.parse(xhr.responseText).error);
-      }
-    };
-
-    xhr.send(formData);
-  }
-
-  async function loadFiles() {
-    const res = await fetch(`${API_URL}/files`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const files = await res.json();
-    const list = document.getElementById('fileList');
-    list.innerHTML = '';
-
-    files.forEach(f => {
-      const div = document.createElement('div');
-      div.className = 'file-item';
-      const fileUrl = `${API_URL}/files/download/${f.id}`;
-      div.innerHTML = `
-        <div>
-          <strong>${f.originalName}</strong> (${(f.size / (1024*1024)).toFixed(2)} MB)
-          <br>
-          <span class="tag ${f.isPublic ? 'tag-public' : 'tag-private'}">${f.isPublic ? 'Public' : 'Private'}</span>
+    <!-- Auth Card Floating Screen -->
+    <div id="authScreen" class="w-full max-w-md bg-cardBg border border-gray-800/80 rounded-2xl p-8 shadow-2xl relative z-10 my-8">
+        
+        <!-- Shield Icon Top -->
+        <div class="flex justify-center mb-5">
+            <div class="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
         </div>
-        <div>
-          <button onclick="toggleVisibility('${f.id}', ${!f.isPublic})" style="background:#475569;">Make ${f.isPublic ? 'Private' : 'Public'}</button>
-          <a href="${fileUrl}" target="_blank" style="margin-left:8px;">Download Link</a>
-        </div>
-      `;
-      list.appendChild(div);
-    });
-  }
 
-  async function toggleVisibility(id, isPublic) {
-    await fetch(`${API_URL}/files/${id}/visibility`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ isPublic })
-    });
-    loadFiles();
-  }
-</script>
+        <!-- Dynamic Header -->
+        <div class="text-center space-y-1 mb-6">
+            <h2 id="authTitle" class="text-2xl font-bold text-white tracking-tight">Welcome Back</h2>
+            <p id="authSubtitle" class="text-xs text-gray-400 font-medium">Access your secure storage vault</p>
+        </div>
+
+        <!-- Alert Notification (e.g. Registration Successful) -->
+        <div id="authAlert" class="hidden mb-5 p-3 rounded-xl text-xs font-medium border text-center"></div>
+
+        <!-- Auth Form -->
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+            <!-- Email Field -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                <div class="relative">
+                    <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="email" id="authEmail" required placeholder="vikashkumar355555@gmail.com" 
+                           class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="password" id="authPassword" required placeholder="••••••••" 
+                           class="w-full bg-inputBg border border-gray-700/60 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition placeholder-gray-600">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                        <i id="eyeIcon" class="fa-regular fa-eye text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="authSubmitBtn" 
+                    class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+                <i id="btnIcon" class="fa-solid fa-right-to-bracket text-xs"></i>
+                <span id="btnText">Sign In</span>
+            </button>
+        </form>
+
+        <!-- Toggle Switch Link -->
+        <div class="text-center mt-6 text-xs text-gray-400 font-medium">
+            <span id="toggleQuestion">Don't have an account?</span>
+            <button onclick="switchAuthMode()" id="toggleActionBtn" class="text-indigo-400 font-semibold hover:underline ml-1">Sign Up</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container (Hidden until logged in) -->
+    <div id="dashboardScreen" class="hidden fixed inset-0 bg-darkBg z-50 flex items-center justify-center">
+        <div class="text-center space-y-4">
+            <h1 class="text-3xl font-bold text-white">Dashboard Access Granted</h1>
+            <p class="text-gray-400 text-sm">You are logged into your secure storage vault.</p>
+            <button onclick="logout()" class="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let currentMode = 'login'; // 'login' or 'register'
+
+        function setAuthMode(mode, alertMessage = null) {
+            currentMode = mode;
+            const title = document.getElementById('authTitle');
+            const subtitle = document.getElementById('authSubtitle');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const question = document.getElementById('toggleQuestion');
+            const actionBtn = document.getElementById('toggleActionBtn');
+            const alertBox = document.getElementById('authAlert');
+
+            if (alertMessage) {
+                alertBox.className = "mb-5 p-2.5 rounded-xl text-xs font-medium border text-center bg-emerald-500/15 border-emerald-500/40 text-emerald-400";
+                alertBox.innerText = alertMessage;
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.classList.add('hidden');
+            }
+
+            if (mode === 'register') {
+                title.innerText = "Create Account";
+                subtitle.innerText = "Start securing your files for free";
+                btnText.innerText = "Register Account";
+                btnIcon.className = "fa-solid fa-user-plus text-xs";
+                question.innerText = "Already have an account?";
+                actionBtn.innerText = "Sign In";
+            } else {
+                title.innerText = "Welcome Back";
+                subtitle.innerText = "Access your secure storage vault";
+                btnText.innerText = "Sign In";
+                btnIcon.className = "fa-solid fa-right-to-bracket text-xs";
+                question.innerText = "Don't have an account?";
+                actionBtn.innerText = "Sign Up";
+            }
+        }
+
+        function switchAuthMode() {
+            if (currentMode === 'login') {
+                setAuthMode('register');
+            } else {
+                setAuthMode('login');
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('authPassword');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'fa-regular fa-eye-slash text-xs';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'fa-regular fa-eye text-xs';
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const alertBox = document.getElementById('authAlert');
+
+            const endpoint = currentMode === 'login' ? '/auth/login' : '/auth/register';
+
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alertBox.className = "mb-5 p-2.5 rounded-xl text-xs font-medium border text-center bg-red-500/15 border-red-500/40 text-red-400";
+                    alertBox.innerText = data.error || "Authentication failed.";
+                    alertBox.classList.remove('hidden');
+                } else {
+                    if (currentMode === 'register') {
+                        // Switch to login view and show green success message like in screenshot 2
+                        setAuthMode('login', 'Registration successful! Please log in.');
+                    } else {
+                        localStorage.setItem('authToken', data.token);
+                        showDashboard();
+                    }
+                }
+            } catch (err) {
+                alertBox.className = "mb-5 p-2.5 rounded-xl text-xs font-medium border text-center bg-red-500/15 border-red-500/40 text-red-400";
+                alertBox.innerText = "Server connection error.";
+                alertBox.classList.remove('hidden');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('authScreen').classList.remove('hidden');
+            setAuthMode('login');
+        }
+
+        // Initialize Screen Check
+        if (localStorage.getItem('authToken')) {
+            showDashboard();
+        } else {
+            setAuthMode('login');
+        }
+    </script>
 </body>
 </html>
